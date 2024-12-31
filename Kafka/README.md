@@ -85,3 +85,27 @@ npm start
 tony south
 tony north
 ```
+
+## Running kafka on terminal without Zookeeper
+
+```bash
+# Run command
+docker run -p 9092:9092 apache/kafka:3.7.1
+
+# Find container id and execute kafka inside docker 
+docker ps 
+docker exec -it 9e7290d11bf2  /bin/bash
+cd /opt/kafka/bin
+
+# Create a topic 
+./kafka-topics.sh --create --topic topic_name --bootstrap-server localhost:9092
+
+
+# Create a Consumer 
+./kafka-console-consumer.sh --topic topic_name --from-beginning --bootstrap-server localhost:9092
+
+#Create a Producer
+./kafka-console-producer.sh --topic payments --bootstrap-server localhost:9092
+
+# Send messages from Producers to Consumers ( many to many ) 
+```
