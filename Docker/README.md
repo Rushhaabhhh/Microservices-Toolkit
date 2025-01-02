@@ -96,7 +96,7 @@
 
 - **Docker Hub** is a cloud-based registry for storing, sharing, and discovering Docker container images, enabling developers to access pre-built images and collaborate on containerized applications.
 
-![[Pasted image 20250102213516.png]]
+![image](https://github.com/user-attachments/assets/779e97a0-89fa-43e1-816f-1d4b254fd0a7)
 
 
 ## Docker Basic Coding
@@ -204,9 +204,9 @@ FROM node:20          # Base image (cached if unchanged)
 
 WORKDIR /src/app      # Set working directory (cached)
 
-COPY package*.   # Copy dependencies file (cached)
+COPY package*.        # Copy dependencies file (cached)
 
-RUN npm install       # Install dependencies (cached if package.json is                                                                       unchanged)
+RUN npm install       # Install dependencies (cached if package.json is unchanged)
 COPY . .              # Copy source code (rebuild only if files change)
 
 EXPOSE 3000           # Expose application port
@@ -220,3 +220,71 @@ CMD ["npm", "start"]  # Default command
 	- **Cost-Effective**: Reduces compute time for CI/CD pipelines.
 	
 - Using Specific / Smaller Base Images : For e.g. using `alpine-node` instead of `node:20` or `node:latest`
+
+
+## Volumes and Networks 
+
+> While using Docker we want local database to retain information across restarts ( Volumes ) and we want to allow one docker container to talk to another cont. ( Networks )
+
+### Volumes 
+- Volumes store data outside the container lifecycle, ensuring data is not lost when containers are stopped or removed for persistant storage.
+- #### **Types** :
+	1. **Anonymous Volumes** :
+	    - Created without names.
+	    - Useful for temporary storage.
+	2. **Named Volumes** : Explicitly named and reusable across containers.
+	3. **Bind Mounts** : Maps a host directory to a container directory.
+
+- #### **Commands** :
+```Dockerfile
+docker volume create my-volume                    // Create a volume
+
+docker run -v my-volume:/app/data my-image        // Use the volume
+ 
+docker volume inspect my-volume                   // Inspect the volumes
+
+docker volume prune                               // Remove unused volumes
+```
+
+- For example : 
+```Dockerfile
+docker pull mongo
+docker run -p 27017:27017 mongo
+
+docker volume create vol_database
+docker run -v vol_database:/data/db -p 27017:27017 mongo  
+```
+- The command starts a MongoDB container using the official MongoDB image. It mounts a named volume `vol_database` to the `/data/db` directory inside the container, ensuring persistent storage of database files even if the container stops or is removed and  mapping the container's port 27017 to the host's port 27017. This setup provides both data persistence and external accessibility for MongoDB.
+
+- #### **Issues & Fixes** :
+
+| **Issue**                         | **Fix**                                                         |
+| --------------------------------- | --------------------------------------------------------------- |
+| Data loss after container removal | Use named volumes for persistent storage.                       |
+| Conflicts with host file systems  | Prefer volumes over bind mounts for better isolation.           |
+| Permission errors                 | Ensure correct permissions for host directories in bind mounts. |
+
+### Networks 
+Networks allow containers to communicate securely, either with each other or external systems for container communication.
+- #### **Types**:
+
+1. **Bridge Network** (default) : For isolated container-to-container communication.
+2. **Host Network** : Shares the host's network stack, improving performance but reducing isolation.
+3. **Overlay Network** : Used in Swarm mode for communication across multiple hosts.
+4. **None** : Disables networking for the container.
+
+- #### **Commands :** 
+```Dockerfile
+docker network ls                                 // List all networks
+
+docker network create my-network                  // Create a network
+
+docker network connect my-network my-container    // Connect a cont to a network
+```
+- #### **Issues & Fixes**:
+
+|**Issue**|**Fix**|
+|---|---|
+|Containers can't communicate|Ensure they are on the same network (e.g., a custom bridge).|
+|IP conflicts in host network|Avoid `--network=host` unless necessary.|
+|DNS resolution issues in containers|Use Docker's internal DNS for container communication.|
