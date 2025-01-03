@@ -288,3 +288,195 @@ docker network connect my-network my-container    // Connect a cont to a network
 |Containers can't communicate|Ensure they are on the same network (e.g., a custom bridge).|
 |IP conflicts in host network|Avoid `--network=host` unless necessary.|
 |DNS resolution issues in containers|Use Docker's internal DNS for container communication.|
+
+![Screenshot from 2025-01-03 00-05-04](https://github.com/user-attachments/assets/9eb063d0-4301-4a81-9c8a-d8057e2742d4)
+
+
+## ENV in Docker
+
+- Passing environment variables to a container at runtime.
+- `docker run -e VAR_NAME=value <image_name>`
+- Example : `docker run -e APP_ENV=production -e DB_HOST=localhost <image_name>`
+- Using `.env` file : `docker run --env-file .env <image_name>`
+
+## Multi Stage Builds
+
+-> Multi Stage Builds are a technique in Docker to build lightweight, production-ready images by separating build and runtime stages. Multiple `FROM` instructions in a single `Dockerfile`, each defining a separate stage.
+
+- #### **Benefits**:
+1. **Reduced Image Size**: Only the necessary artifacts are included in the final image.
+2. **Improved Security**: Excludes unnecessary build tools and dependencies from the production image.
+3. **Simplified Workflow**: Combines build and runtime processes in one `Dockerfile`.
+
+```Dockerfile
+# Stage 1 : Build image
+FROM node:20 AS base
+WORKDIR /src/app
+COPY package*.json ./
+RUN npm install
+
+# Stage 2 : Dev image
+FROM base AS development
+COPY . . 
+CMD ["npm", "run", "dev"]
+
+# Stage 3 : Production image
+FROM base as production 
+COPY . .
+RUN npm prune --production
+CMD ["npm", "run", "start"]
+```
+
+- Building development : 
+```
+docker build --target development -t myapp:dev.
+
+docker run -e MONGO_URL=mongob://localhost:27017/mydb
+-p 3000:3000
+-v .:/src/app
+myapp:dev
+```
+
+- Building production : 
+```
+docker build --target production -t myapp:prod.
+
+docker run -e MONGO_URL=mongob://localhost:27017/mydb
+-p 3000:3000
+-v .:/src/app
+myapp:prod
+```
+
+
+- **Problem Statement** : When running `npm run dev`, the app uses `nodemon` for automatic reloading, but with `docker run`, changes in `index.js` do not trigger server restarts.
+
+	- KEY POINT : The issue arises because Docker containers operate in isolation and do not detect file changes by default. 
+	
+	- ANSWER :  Use the `-v .:/src/app` flag when running the container to mount the current directory as a volume. This syncs code changes from the host machine to the container. 
+
+- ####  Detached mode in Docker : 
+	- **Definition**: Runs a container in the background, allowing the terminal to remain free for other tasks.
+	- Command : `docker run -d <image_name>`  The ` -d ` tag
+	- **Key Features** :
+	    - The container runs independently of the terminal.
+	    - Returns the container ID for management.
+		- Ideal for long-running services like web servers, databases, or background tasks.
+
+
+## Docker Compose
+
+-> Docker Compose is a tool for defining and managing multi-container Docker applications. It uses a `docker-compose.yml` file to configure the services, networks, and volumes needed for an application.
+#### **Key Features**
+
+1. **Simplified Management**: Manage multiple containers as a single service.
+2. All containers are already connected via a **network** nd can be referenced by their name.
+3. **Declarative Configuration** : Use YAML to define services, networks, and volumes.
+4. **Environment Isolation**: Run applications in isolated environments for testing and development.
+5. **Scalability**: Easily scale services using the `docker-compose up --scale` command.
+
+#### **Common Commands**
+1. **Start Services**: `docker-compose up`
+2. **Stop Services**: `docker-compose down`
+3. **Scale Services**: `docker-compose up --scale <service>=<number>`
+4. **View Logs**: `docker-compose logs`
+5. **Execute Commands in Containers**: `docker-compose exec <service> <command>`
+
+Basic `docker-compose.yaml` code : 
+```yaml
+version: '3.8'
+services:
+  web:
+    image: node:20
+    working_dir: /app
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    command: npm start
+
+  db:
+    image: mongo
+    volumes:
+      - db_data:/data/db
+    ports:
+      - "27017:27017"
+
+volumes:
+  db_data:
+```
+
+Running docker-compose : 
+```
+docker-compose up                 // Start the application
+
+docker-compose down               // Stop and clean up resources
+```
+
+## Docker Swarm
+
+-> Docker Swarm is Docker’s native clustering and orchestration tool, enabling the management of multiple Docker nodes (hosts) as a single virtual system. It provides load balancing, fault tolerance, and scalability for containerized applications.
+#### **Key Features**
+1. **Clustering**: Combines multiple Docker hosts into a swarm (cluster).
+2. **Decentralized Design**: Uses manager and worker nodes for task distribution.
+3. **Service Management**: Simplifies deployment and scaling of services.
+4. **Load Balancing**: Automatically balances traffic among containers.
+5. **Security**: Provides secure communication between nodes using TLS.
+
+#### **Benefits of Docker Swarm**
+- **Simplified Orchestration**: Built-in orchestration without requiring additional tools.
+- **Fault Tolerance**: Redistributes tasks if a node fails.
+- **Scalability**: Easily scale services up or down.
+- **Seamless Networking**: Automatic service discovery and communication.
+
+#### **Issues Resolved by Docker Swarm**
+1. **Load Balancing**: Prevents overloading a single container or node.
+2. **High Availability**: Ensures services remain available even during failures.
+3. **Scaling Challenges**: Automates scaling processes with minimal manual intervention.
+4. **Simplified Deployment**: Deploys complex multi-service apps with a single command.
+
+
+| **Aspect**              | **Docker Swarm**                                        | **Kubernetes**                                                  |
+| ----------------------- | ------------------------------------------------------- | --------------------------------------------------------------- |
+| **Definition**          | Native container orchestration tool by Docker.          | Open-source container orchestration platform by Google.         |
+| **Ease of Use**         | Simpler setup and easier to learn.                      | Steeper learning curve but highly flexible and powerful.        |
+| **Deployment**          | Faster and less complex to deploy clusters.             | More complex but provides robust deployment options.            |
+| **Scalability**         | Suitable for smaller-scale applications.                | Handles large-scale, enterprise-grade workloads.                |
+| **Load Balancing**      | Built-in load balancing for services.                   | External load balancers or Ingress controllers required.        |
+| **Fault Tolerance**     | Basic fault tolerance; reassigns tasks on node failure. | Advanced self-healing with automatic pod rescheduling.          |
+| **Networking**          | Simplified overlay networking for service discovery.    | Rich networking model using namespaces and Ingress.             |
+| **Storage**             | Supports volumes but lacks advanced storage features.   | Offers persistent volumes and dynamic storage provisioning.     |
+| **Community Support**   | Smaller community and fewer third-party integrations.   | Large community with extensive third-party tools and add-ons.   |
+| **CLI Tools**           | Single CLI (`docker` command).                          | Separate CLI tools (`kubectl`, `helm`, etc.).                   |
+| **Resource Management** | Limited resource allocation and monitoring.             | Granular resource management and monitoring (e.g., Prometheus). |
+| **Configuration Files** | Uses simple YAML files in `docker-compose.yml`.         | Complex YAML manifests with namespaces and resources.           |
+| **Updates**             | Rolling updates with basic control.                     | Rolling updates with detailed strategies and rollback support.  |
+| **Ecosystem**           | Tightly integrated with Docker.                         | Independent, works with Docker, CRI-O, or other runtimes.       |
+| **Use Cases**           | Ideal for small teams or simpler applications.          | Best for enterprise and multi-cluster deployments.              |
+
+### Docker Swarm Architecture
+
+1. **Manager Nodes** :
+    - Serve as the control plane for the swarm.
+    - Handle task scheduling, orchestration, and maintain the desired state of services.
+    - Provide high availability through clustering (e.g., primary and backup managers).
+    - Communicate securely with worker nodes using TLS.
+    
+2. **Worker Nodes**:
+    - Execute tasks assigned by the manager nodes.
+    - Cannot make decisions about task placement but perform containerized workloads.
+    
+3. **Key Components** :
+    - **Overlay Network**: Secure communication between nodes.
+    - **Service Deployment**: Services are distributed across the worker nodes.
+    - **Load Balancing**: Distributes client requests evenly among service replicas.
+
+This architecture ensures **fault tolerance, scalability, and efficient task distribution**. The image captures the relationships between managers, workers, and the overlay network in the cluster.
+
+![Screenshot from 2025-01-03 16-16-32](https://github.com/user-attachments/assets/02ce6c2d-9ddd-4c3f-9e35-5668640cdbba)
+
+### Services, Tasks and Containers 
+
+![Screenshot from 2025-01-03 16-24-29](https://github.com/user-attachments/assets/4248f3cf-2b33-4410-9a07-37520b3ca5ec)
+
+
+
