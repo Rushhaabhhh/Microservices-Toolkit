@@ -182,3 +182,165 @@ GraphQL APIs often require user authentication and authorization. Tokens (like J
 - **Apollo Server**: A popular GraphQL server implementation for building APIs.
 - **Apollo Client**: A client for interacting with GraphQL APIs in JavaScript-based apps.
 - **GraphiQL/GraphQL Playground**: Interactive tools for testing GraphQL queries and mutations.
+
+## GraphQL - http vs Apollo Server 
+
+### 1.  graphql-http server
+
+`graphql-http` is a minimalistic, protocol-compliant GraphQL server implementation for handling HTTP requests.
+
+#### Key Features :
+- **Lightweight and Minimal:** Focuses purely on handling GraphQL over HTTP without any extras.
+- **Specification-Compliant:** Adheres to the GraphQL over HTTP specification, ensuring compatibility.
+- **Flexibility:** Doesn't enforce any specific frameworks or middleware—can be integrated with various HTTP servers (e.g., `http`, `express`, `fastify`).
+- **Streaming Support:** Supports GraphQL over HTTP multipart responses and `application/graphql+json` for subscriptions and live queries.
+- **Middleware Agnostic:** You choose how to wire it into your existing HTTP stack.
+
+#### Use Cases :
+- When you need a lightweight solution for GraphQL without additional features.
+- For custom GraphQL setups where you want to control every aspect of the server.
+- For performance-sensitive applications requiring minimal overhead.
+
+#### Advantages :
+- Highly customizable.
+- Minimal dependencies.
+- Adherence to standards ensures compatibility with clients like Apollo or Relay.
+
+#### Drawbacks :
+- No built-in support for advanced features like caching, schema stitching, or federations.
+- Requires additional libraries or custom implementations for complex needs like authentication, logging, or monitoring.
+
+---
+
+### **2. Apollo Server**
+
+Apollo Server is a comprehensive GraphQL server solution that comes with built-in features for modern GraphQL application needs.
+
+#### Key Features :
+- **Schema First Development:** Includes tools like `typeDefs` and `resolvers` for building schemas.
+- **Data Sources:** Supports integration with REST APIs and other data sources out of the box.
+- **Subscriptions:** Built-in support for WebSocket-based GraphQL subscriptions.
+- **Apollo Federation:** Enables schema stitching and federated GraphQL services for microservices architecture.
+- **Advanced Features:** Includes caching, tracing, monitoring, and error handling integrations (e.g., Apollo Studio).
+- **Middleware Ready:** Works seamlessly with frameworks like Express, Koa, and Fastify.
+
+#### Use Cases :
+- When you want an opinionated and feature-rich GraphQL server out of the box.
+- For enterprise applications needing features like federation, schema stitching, and integration with Apollo Studio.
+- For teams who prefer minimal setup and best-practice defaults.
+
+#### Advantages :
+- All-in-one solution for GraphQL needs.
+- Strong community and ecosystem support.
+- Built-in performance monitoring and schema validation tools.
+- Integrates well with Apollo Client for end-to-end GraphQL development.
+
+#### Drawbacks :
+- Heavier than `graphql-http` in terms of size and complexity.
+- Less flexible if you want a completely custom implementation.
+- May include features you don't need, which can impact performance.
+
+---
+
+### **Comparison Table**
+
+| Feature               | graphql-http server               | Apollo Server                   |
+| --------------------- | --------------------------------- | ------------------------------- |
+| **Complexity**        | Lightweight and minimalistic      | Full-featured and opinionated   |
+| **Customizability**   | High (you build what you need)    | Moderate (opinionated defaults) |
+| **Performance**       | Optimized for minimal overhead    | Slightly heavier                |
+| **Streaming Support** | Yes (HTTP streaming supported)    | Limited to WebSockets           |
+| **Caching**           | Manual implementation required    | Built-in data source caching    |
+| **Subscriptions**     | Basic HTTP support                | Full WebSocket implementation   |
+| **Federation**        | Not supported                     | Built-in                        |
+| **Use Case**          | Minimalist setups, custom servers | Enterprise-grade applications   |
+### **Which One to Choose?**
+
+- **Choose `graphql-http` server** if:
+    
+    - You want a minimal, spec-compliant GraphQL server.
+    - You need high performance and flexibility.
+    - You’re comfortable building additional features as needed.
+- **Choose Apollo Server** if:
+    
+    - You need a complete solution with advanced features.
+    - You’re working with a team that uses Apollo Client.
+    - You want federation, caching, or built-in monitoring.
+
+---
+
+## Testing using Postman 
+
+#### **Schema Introspection**
+
+Use the following query to fetch the GraphQL schema:
+
+```json
+{   
+	"query": "query { 
+		__schema { 
+			types { name } 
+		} 
+	}" 
+}
+```
+#### **Output for a Query**
+
+Request :
+```json
+{   
+	"query": "query { 
+		getUser(id: \"1\") { 
+			name email age 
+		} 
+	}"
+}
+```
+
+Response : 
+```json
+{
+  "data": {
+    "getUser": {
+      "name": "Alice",
+      "email": "alice@example.com",
+      "age": 30
+    }
+  }
+}```
+
+#### **Output for a Mutation**
+
+Request :
+```json
+{
+  "query": "mutation { 
+		createUser(input: { 
+		name: \"Alice\", 
+		email: \"alice@example.com\", 
+		age: 30 
+		}) 
+		{ id name } 
+	}"
+}
+```
+
+
+Response :
+```json
+{
+  "data": {
+    "createUser": {
+      "id": "1",
+      "name": "Alice"
+    }
+  }
+}
+```
+### **Key Definitions**
+
+- **GraphQL Query**: Fetches data. Similar to `GET` in REST.
+- **GraphQL Mutation**: Modifies data. Similar to `POST`, `PUT`, or `DELETE` in REST.
+- **Schema**: Defines the data structure, including types and operations.
+- **Resolvers**: Functions on the server-side to handle GraphQL operations.
+- **Introspection**: Allows clients to query the schema itself to understand the structure and capabilities of the API.
