@@ -20,6 +20,10 @@ Apache Kafka is a distributed event streaming platform designed for high-through
 - **Schema Registry**: Ensures consistent data serialization and compatibility between producers and consumers.
 - **Exactly Once Semantics**: Guarantees message delivery without duplication or loss, even in failure scenarios.
 
+### Kafka Ecosystem Overview
+
+![Pasted image 20250106101738](https://github.com/user-attachments/assets/a97f6f16-3ad1-4c77-a6b6-98370243fcb8)
+
 
 ## Docker Setup for Kafka
 
